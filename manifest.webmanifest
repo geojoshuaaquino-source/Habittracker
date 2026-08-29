@@ -1,0 +1,10 @@
+{
+  "name": "Questlog — RPG Habit Tracker",
+  "short_name": "Questlog",
+  "description": "Turn your daily habits into RPG quests, earn XP, and level up.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#120f18",
+  "theme_color": "#17131f",
+  "icons": []
+}
