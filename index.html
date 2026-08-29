@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#17131f" />
+  <meta name="description" content="A fantasy RPG habit tracker that turns daily habits into quests and experience." />
+  <title>Questlog — Level Up Your Life</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">✦</div>
+        <div>
+          <span class="eyebrow">ADVENTURER'S LOG</span>
+          <h1>Questlog</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="resetDayBtn" title="Reset today's progress" aria-label="Reset today's progress">↻</button>
+        <div class="avatar" aria-label="Player avatar">A</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-grid">
+        <article class="panel character-card">
+          <div class="character-top">
+            <div class="avatar large">A</div>
+            <div class="character-info">
+              <span class="eyebrow">PLAYER CHARACTER</span>
+              <h2>Adventurer</h2>
+              <p id="rankText">Novice</p>
+            </div>
+            <div class="level-badge"><span>LVL</span><strong id="levelValue">1</strong></div>
+          </div>
+          <div class="xp-row">
+            <div class="xp-label"><span>Experience</span><strong id="xpText">0 / 100 XP</strong></div>
+            <div class="xp-track" aria-label="Experience progress"><div class="xp-fill" id="xpFill"></div></div>
+          </div>
+          <div class="stat-grid">
+            <div><span>STREAK</span><strong id="streakValue">0</strong><small>days</small></div>
+            <div><span>QUESTS</span><strong id="completedValue">0</strong><small>complete</small></div>
+            <div><span>XP EARNED</span><strong id="totalXpValue">0</strong><small>lifetime</small></div>
+          </div>
+        </article>
+
+        <article class="panel daily-card">
+          <div class="section-heading">
+            <div><span class="eyebrow">TODAY'S OBJECTIVE</span><h2>Daily Quests</h2></div>
+            <span class="date-pill" id="dateLabel"></span>
+          </div>
+          <div class="progress-summary">
+            <span id="dailySummary">0 of 0 completed</span>
+            <strong id="dailyPercent">0%</strong>
+          </div>
+          <div class="daily-progress"><div id="dailyProgressFill"></div></div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <div class="panel quests-panel">
+          <div class="section-heading">
+            <div><span class="eyebrow">QUEST BOARD</span><h2>Your Habits</h2></div>
+            <button class="primary-btn" id="addQuestBtn">+ New Quest</button>
+          </div>
+          <div id="questList" class="quest-list"></div>
+          <div id="emptyState" class="empty-state hidden">
+            <div class="empty-icon">⚔</div>
+            <h3>No quests yet</h3>
+            <p>Add a habit and turn it into your next daily mission.</p>
+            <button class="secondary-btn" id="emptyAddBtn">Create first quest</button>
+          </div>
+        </div>
+
+        <aside class="panel side-panel">
+          <div class="section-heading"><div><span class="eyebrow">RPG STATS</span><h2>Character Sheet</h2></div></div>
+          <div class="stat-bars">
+            <div class="bar-stat"><div><span>Discipline</span><strong id="disciplineStat">1</strong></div><div class="bar"><i id="disciplineBar"></i></div></div>
+            <div class="bar-stat"><div><span>Consistency</span><strong id="consistencyStat">1</strong></div><div class="bar"><i id="consistencyBar"></i></div></div>
+            <div class="bar-stat"><div><span>Momentum</span><strong id="momentumStat">1</strong></div><div class="bar"><i id="momentumBar"></i></div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="tip-card"><span class="tip-icon">✧</span><div><strong>Adventurer's Tip</strong><p>Small quests completed consistently build the strongest character.</p></div></div>
+        </aside>
+      </section>
+    </main>
+
+    <footer>Questlog <span>•</span> Your habits. Your quest. Your level.</footer>
+  </div>
+
+  <dialog id="questDialog" class="quest-dialog">
+    <form method="dialog" id="questForm">
+      <div class="dialog-heading"><div><span class="eyebrow">NEW QUEST</span><h2>Add a Habit</h2></div><button class="close-btn" value="cancel" aria-label="Close">×</button></div>
+      <label for="questName">Quest name</label>
+      <input id="questName" name="questName" maxlength="42" placeholder="e.g. Read for 20 minutes" required autocomplete="off" />
+      <label for="questXp">XP reward</label>
+      <select id="questXp" name="questXp"><option value="10">10 XP · Easy</option><option value="20" selected>20 XP · Normal</option><option value="35">35 XP · Hard</option><option value="50">50 XP · Epic</option></select>
+      <p class="form-hint">Completing a quest today awards its XP once. Your progress is saved on this device.</p>
+      <div class="dialog-actions"><button class="secondary-btn" value="cancel">Cancel</button><button class="primary-btn" id="saveQuestBtn" value="default">Add Quest</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
