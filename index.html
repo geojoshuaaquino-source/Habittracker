@@ -13,14 +13,29 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card panel">
+      <div class="brand auth-brand"><div class="brand-mark">✦</div><div><span class="eyebrow">ADVENTURER'S LOG</span><h1>Questlog</h1></div></div>
+      <div class="auth-copy"><span class="eyebrow" id="authEyebrow">BEGIN YOUR ADVENTURE</span><h2 id="authTitle">Create your account</h2><p id="authSubtitle">Your quests and progress will follow you across devices.</p></div>
+      <form id="authForm">
+        <div id="displayNameField"><label for="displayName">Adventurer name</label><input id="displayName" maxlength="40" autocomplete="name" placeholder="Your name" /></div>
+        <label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+        <label for="password">Password</label><input id="password" type="password" minlength="6" autocomplete="new-password" placeholder="At least 6 characters" required />
+        <p id="authMessage" class="auth-message" role="status"></p>
+        <button class="primary-btn auth-submit" id="authSubmit" type="submit">Create Account</button>
+      </form>
+      <button class="auth-switch" id="authSwitch" type="button">Already have an account? Log in</button>
+    </div>
+  </div>
+
+  <div id="app" class="app-shell hidden">
     <header class="topbar">
       <div class="brand"><div class="brand-mark" aria-hidden="true">✦</div><div><span class="eyebrow">ADVENTURER'S LOG</span><h1>Questlog</h1></div></div>
-      <div class="header-actions"><button class="icon-btn" id="resetDayBtn" title="Reset today's progress" aria-label="Reset today's progress">↻</button><div class="avatar" aria-label="Player avatar">A</div></div>
+      <div class="header-actions"><button class="icon-btn" id="resetDayBtn" title="Reset today's progress" aria-label="Reset today's progress">↻</button><button class="user-menu" id="userMenu" title="Log out"><span class="avatar" id="userAvatar">A</span><span id="userName">Adventurer</span></button></div>
     </header>
     <main>
       <section class="hero-grid">
-        <article class="panel character-card"><div class="character-top"><div class="avatar large">A</div><div class="character-info"><span class="eyebrow">PLAYER CHARACTER</span><h2>Adventurer</h2><p id="rankText">Novice</p></div><div class="level-badge"><span>LVL</span><strong id="levelValue">1</strong></div></div><div class="xp-row"><div class="xp-label"><span>Experience</span><strong id="xpText">0 / 100 XP</strong></div><div class="xp-track" aria-label="Experience progress"><div class="xp-fill" id="xpFill"></div></div></div><div class="stat-grid"><div><span>STREAK</span><strong id="streakValue">0</strong><small>days</small></div><div><span>QUESTS</span><strong id="completedValue">0</strong><small>complete</small></div><div><span>XP EARNED</span><strong id="totalXpValue">0</strong><small>lifetime</small></div></div></article>
+        <article class="panel character-card"><div class="character-top"><div class="avatar large" id="characterAvatar">A</div><div class="character-info"><span class="eyebrow">PLAYER CHARACTER</span><h2 id="characterName">Adventurer</h2><p id="rankText">Novice</p></div><div class="level-badge"><span>LVL</span><strong id="levelValue">1</strong></div></div><div class="xp-row"><div class="xp-label"><span>Experience</span><strong id="xpText">0 / 100 XP</strong></div><div class="xp-track"><div class="xp-fill" id="xpFill"></div></div></div><div class="stat-grid"><div><span>STREAK</span><strong id="streakValue">0</strong><small>days</small></div><div><span>QUESTS</span><strong id="completedValue">0</strong><small>complete today</small></div><div><span>XP EARNED</span><strong id="totalXpValue">0</strong><small>lifetime</small></div></div></article>
         <article class="panel daily-card"><div class="section-heading"><div><span class="eyebrow">TODAY'S OBJECTIVE</span><h2>Daily Quests</h2></div><span class="date-pill" id="dateLabel"></span></div><div class="progress-summary"><span id="dailySummary">0 of 0 completed</span><strong id="dailyPercent">0%</strong></div><div class="daily-progress"><div id="dailyProgressFill"></div></div></article>
       </section>
       <section class="content-grid">
@@ -30,8 +45,11 @@
     </main>
     <footer>Questlog <span>•</span> Your habits. Your quest. Your level.</footer>
   </div>
-  <dialog id="questDialog" class="quest-dialog"><form method="dialog" id="questForm"><div class="dialog-heading"><div><span class="eyebrow">NEW QUEST</span><h2>Add a Habit</h2></div><button class="close-btn" value="cancel" aria-label="Close">×</button></div><label for="questName">Quest name</label><input id="questName" name="questName" maxlength="42" placeholder="e.g. Read for 20 minutes" required autocomplete="off" /><label for="questXp">XP reward</label><select id="questXp" name="questXp"><option value="10">10 XP · Easy</option><option value="20" selected>20 XP · Normal</option><option value="35">35 XP · Hard</option><option value="50">50 XP · Epic</option></select><p class="form-hint">Completing a quest today awards its XP once. Your progress is saved on this device.</p><div class="dialog-actions"><button class="secondary-btn" value="cancel">Cancel</button><button class="primary-btn" id="saveQuestBtn" value="default">Add Quest</button></div></form></dialog>
+
+  <dialog id="questDialog" class="quest-dialog"><form method="dialog" id="questForm"><div class="dialog-heading"><div><span class="eyebrow">NEW QUEST</span><h2>Add a Habit</h2></div><button class="close-btn" value="cancel" aria-label="Close">×</button></div><label for="questName">Quest name</label><input id="questName" maxlength="100" placeholder="e.g. Read for 20 minutes" required autocomplete="off" /><label for="questXp">XP reward</label><select id="questXp"><option value="10">10 XP · Easy</option><option value="20" selected>20 XP · Normal</option><option value="35">35 XP · Hard</option><option value="50">50 XP · Epic</option></select><p class="form-hint">Complete quests daily to earn XP and build your streak.</p><div class="dialog-actions"><button class="secondary-btn" value="cancel">Cancel</button><button class="primary-btn" value="default">Add Quest</button></div></form></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js"></script><script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});</script>
 </body>
 </html>
