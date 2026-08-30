@@ -1,22 +1,96 @@
 const SUPABASE_URL = 'https://qkvpblwybivrlqvztzng.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VbHwBKntirFkozG1wKcHAA_3-cBL71o';
+const PRODUCTION_URL = 'https://habittracker-rho-one.vercel.app';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let user = null, profile = null, habits = [], completions = new Set();
+let user = null, profile = null, habits = [], completions = new Set(), loginMode = false;
 const $ = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0,10);
 const show = (id, yes) => $(id).classList.toggle('hidden', !yes);
 function message(text, error=false){ const el=$('authMessage'); el.textContent=text; el.classList.toggle('error',error); }
-function mode(login){ $('authTitle').textContent=login?'Log in to Questlog':'Create your account'; $('authSubtitle').textContent=login?'Continue your adventure.':'Your progress follows you across devices.'; $('displayNameField').classList.toggle('hidden',login); $('displayName').required=!login; $('authSubmit').textContent=login?'Log In':'Create Account'; $('authSwitch').textContent=login?'Create an account':'I already have an account'; $('authSwitch').dataset.login=login?'false':'true'; message(''); }
-async function auth(e){e.preventDefault(); const email=$('email').value.trim(), password=$('password').value, name=$('displayName').value.trim(); $('authSubmit').disabled=true; message('Connecting to the guild...'); try{let r;if($('authSwitch').dataset.login==='false'){r=await db.auth.signInWithPassword({email,password});}else{r=await db.auth.signUp({email,password,options:{data:{display_name:name||'Adventurer'},emailRedirectTo:window.location.origin}});}if(r.error)throw r.error;if(!r.data.session){message('Account created. Check your email to confirm it.');return;}user=r.data.user;await load();}catch(x){message(x.message||'Authentication failed.',true)}finally{$('authSubmit').disabled=false}}
-async function load(){const [p,h,c]=await Promise.all([db.from('profiles').select('*').eq('id',user.id).single(),db.from('habits').select('*').eq('user_id',user.id).is('archived_at',null).order('created_at'),db.from('habit_completions').select('habit_id,completed_on').eq('user_id',user.id)]);if(p.error)throw p.error;if(h.error)throw h.error;if(c.error)throw c.error;profile=p.data;habits=h.data||[];completions=new Set((c.data||[]).map(x=>x.habit_id+'|'+x.completed_on));show('authScreen',false);show('app',true);render()}
+function mode(login){
+  loginMode = login;
+  $('authTitle').textContent = login ? 'Log in to Questlog' : 'Create your account';
+  $('authSubtitle').textContent = login ? 'Continue your adventure.' : 'Your quests and progress will follow you across devices.';
+  $('displayNameField').classList.toggle('hidden', login);
+  $('confirmPasswordField').classList.toggle('hidden', login);
+  $('displayName').required = !login;
+  $('confirmPassword').required = !login;
+  $('password').autocomplete = login ? 'current-password' : 'new-password';
+  $('authSubmit').textContent = login ? 'Log In' : 'Create Account';
+  $('authSwitch').textContent = login ? 'Create an account' : 'I already have an account';
+  show('resendConfirm', false);
+  message('');
+}
+async function auth(e){
+  e.preventDefault();
+  const email=$('email').value.trim(), password=$('password').value, name=$('displayName').value.trim();
+  $('authSubmit').disabled=true; message(loginMode ? 'Entering the guild...' : 'Creating your account...');
+  try{
+    let r;
+    if(loginMode){
+      r=await db.auth.signInWithPassword({email,password});
+    } else {
+      const confirm=$('confirmPassword').value;
+      if(password.length < 6) throw new Error('Password must be at least 6 characters.');
+      if(password !== confirm) throw new Error('Passwords do not match.');
+      r=await db.auth.signUp({email,password,options:{data:{display_name:name||'Adventurer'},emailRedirectTo:PRODUCTION_URL}});
+    }
+    if(r.error) throw r.error;
+    if(!loginMode && !r.data.session){
+      message('Account created. Check your email to confirm it.');
+      show('resendConfirm', true);
+      return;
+    }
+    user=r.data.user; await load();
+  }catch(x){
+    message(x.message || 'Authentication failed.',true);
+    if(loginMode && /confirm|verified|verification/i.test(x.message||'')) show('resendConfirm', true);
+  }finally{$('authSubmit').disabled=false}
+}
+async function resendConfirmation(){
+  const email=$('email').value.trim();
+  if(!email) return message('Enter your email first.',true);
+  $('resendConfirm').disabled=true; message('Sending a new confirmation email...');
+  try{
+    const r=await db.auth.resend({type:'signup',email,options:{emailRedirectTo:PRODUCTION_URL}});
+    if(r.error) throw r.error;
+    message('Confirmation email sent. Check your inbox and spam folder.');
+  }catch(x){message(x.message||'Could not resend the confirmation email.',true)}
+  finally{$('resendConfirm').disabled=false}
+}
+async function load(){
+  const [p,h,c]=await Promise.all([
+    db.from('profiles').select('*').eq('id',user.id).single(),
+    db.from('habits').select('*').eq('user_id',user.id).is('archived_at',null).order('created_at'),
+    db.from('habit_completions').select('habit_id,completed_on').eq('user_id',user.id)
+  ]);
+  if(p.error)throw p.error;if(h.error)throw h.error;if(c.error)throw c.error;
+  profile=p.data; habits=h.data||[]; completions=new Set((c.data||[]).map(x=>x.habit_id+'|'+x.completed_on));
+  show('authScreen',false);show('app',true);render();
+}
 function complete(id){return completions.has(id+'|'+today())}
 function levelData(){let xp=profile.lifetime_xp||0,lvl=1,next=100;while(xp>=next){xp-=next;lvl++;next=100+(lvl-1)*50}return{lvl,xp,next}}
-function render(){const d=levelData(),done=habits.filter(h=>complete(h.id)).length,pct=habits.length?Math.round(done/habits.length*100):0; $('levelValue').textContent=d.lvl;$('xpText').textContent=`${d.xp} / ${d.next} XP`;$('xpFill').style.width=Math.min(100,d.xp/d.next*100)+'%';$('completedValue').textContent=done;$('totalXpValue').textContent=profile.lifetime_xp||0;$('streakValue').textContent=profile.streak||0;$('dailySummary').textContent=`${done} of ${habits.length} completed`;$('dailyPercent').textContent=pct+'%';$('dailyProgressFill').style.width=pct+'%';$('dateLabel').textContent=new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});const name=profile.display_name||'Adventurer';$('characterName').textContent=name;$('userName').textContent=name;$('characterAvatar').textContent=name[0].toUpperCase();$('userAvatar').textContent=name[0].toUpperCase();$('rankText').textContent=d.lvl<3?'Novice':d.lvl<6?'Apprentice':d.lvl<10?'Adventurer':'Veteran';renderStats(d,done);const list=$('questList');list.innerHTML='';$('emptyState').classList.toggle('hidden',habits.length>0);habits.forEach(h=>{const el=document.createElement('article');el.className='quest'+(complete(h.id)?' completed':'');el.innerHTML=`<button class="check">${complete(h.id)?'✓':''}</button><div><div class="quest-name"></div><div class="quest-meta">Daily quest</div></div><div class="quest-actions"><span class="quest-xp">+${h.xp_reward} XP</span><button class="delete-btn">×</button></div>`;el.querySelector('.quest-name').textContent=h.name;el.querySelector('.check').onclick=()=>toggle(h);el.querySelector('.delete-btn').onclick=()=>remove(h);list.appendChild(el)})}
+function render(){
+  const d=levelData(),done=habits.filter(h=>complete(h.id)).length,pct=habits.length?Math.round(done/habits.length*100):0;
+  $('levelValue').textContent=d.lvl;$('xpText').textContent=`${d.xp} / ${d.next} XP`;$('xpFill').style.width=Math.min(100,d.xp/d.next*100)+'%';
+  $('completedValue').textContent=done;$('totalXpValue').textContent=profile.lifetime_xp||0;$('streakValue').textContent=profile.streak||0;
+  $('dailySummary').textContent=`${done} of ${habits.length} completed`;$('dailyPercent').textContent=pct+'%';$('dailyProgressFill').style.width=pct+'%';
+  $('dateLabel').textContent=new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  const name=profile.display_name||'Adventurer';$('characterName').textContent=name;$('userName').textContent=name;$('characterAvatar').textContent=name[0].toUpperCase();$('userAvatar').textContent=name[0].toUpperCase();
+  $('rankText').textContent=d.lvl<3?'Novice':d.lvl<6?'Apprentice':d.lvl<10?'Adventurer':'Veteran';renderStats(d,done);
+  const list=$('questList');list.innerHTML='';$('emptyState').classList.toggle('hidden',habits.length>0);
+  habits.forEach(h=>{const el=document.createElement('article');el.className='quest'+(complete(h.id)?' completed':'');el.innerHTML=`<button class="check">${complete(h.id)?'✓':''}</button><div><div class="quest-name"></div><div class="quest-meta">Daily quest</div></div><div class="quest-actions"><span class="quest-xp">+${h.xp_reward} XP</span><button class="delete-btn">×</button></div>`;el.querySelector('.quest-name').textContent=h.name;el.querySelector('.check').onclick=()=>toggle(h);el.querySelector('.delete-btn').onclick=()=>remove(h);list.appendChild(el)})
+}
 function renderStats(d,done){const a=Math.min(100,10+(profile.lifetime_xp||0)/4),b=Math.min(100,10+(profile.streak||0)*8),c=Math.min(100,10+done*25);[['discipline',a],['consistency',b],['momentum',c]].forEach(([n,v])=>{$(n+'Stat').textContent=Math.round(v/10);$(n+'Bar').style.width=v+'%'})}
-async function toggle(h){try{if(!complete(h.id)){const r=await db.from('habit_completions').insert({habit_id:h.id,user_id:user.id,completed_on:today()});if(r.error)throw r.error;profile.lifetime_xp+=h.xp_reward;await db.from('profiles').update({lifetime_xp:profile.lifetime_xp,updated_at:new Date().toISOString()}).eq('id',user.id);toast(`Quest complete! +${h.xp_reward} XP`)}else{const r=await db.from('habit_completions').delete().eq('habit_id',h.id).eq('user_id',user.id).eq('completed_on',today());if(r.error)throw r.error;profile.lifetime_xp=Math.max(0,profile.lifetime_xp-h.xp_reward);await db.from('profiles').update({lifetime_xp:profile.lifetime_xp,updated_at:new Date().toISOString()}).eq('id',user.id);toast('Quest reopened')}await load()}catch(e){toast(e.message||'Could not update quest')}}
+async function toggle(h){try{if(!complete(h.id)){const r=await db.from('habit_completions').insert({habit_id:h.id,user_id:user.id,completed_on:today()});if(r.error)throw r.error;profile.lifetime_xp+=h.xp_reward;const p=await db.from('profiles').update({lifetime_xp:profile.lifetime_xp,updated_at:new Date().toISOString()}).eq('id',user.id);if(p.error)throw p.error;toast(`Quest complete! +${h.xp_reward} XP`)}else{const r=await db.from('habit_completions').delete().eq('habit_id',h.id).eq('user_id',user.id).eq('completed_on',today());if(r.error)throw r.error;profile.lifetime_xp=Math.max(0,profile.lifetime_xp-h.xp_reward);const p=await db.from('profiles').update({lifetime_xp:profile.lifetime_xp,updated_at:new Date().toISOString()}).eq('id',user.id);if(p.error)throw p.error;toast('Quest reopened')}await load()}catch(e){toast(e.message||'Could not update quest')}}
 async function remove(h){const r=await db.from('habits').update({archived_at:new Date().toISOString()}).eq('id',h.id).eq('user_id',user.id);if(r.error)return toast(r.error.message);await load();toast('Quest removed')}
 async function add(e){e.preventDefault();const name=$('questName').value.trim(),xp=Number($('questXp').value);if(!name)return;const r=await db.from('habits').insert({user_id:user.id,name,xp_reward:xp}).select().single();if(r.error)return toast(r.error.message);$('questDialog').close();await load();toast('New quest added')}
 function toast(t){const x=$('toast');x.textContent=t;x.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>x.classList.remove('show'),1800)}
-$('authForm').onsubmit=auth;$('authSwitch').onclick=()=>mode($('authSwitch').dataset.login === 'true');$('addQuestBtn').onclick=()=>{$('questDialog').showModal();$('questName').focus()};$('emptyAddBtn').onclick=()=>{$('questDialog').showModal();$('questName').focus()};$('questForm').onsubmit=add;$('userMenu').onclick=async()=>{await db.auth.signOut();location.reload()};$('resetDayBtn').onclick=async()=>{const ids=habits.filter(h=>complete(h.id));for(const h of ids)await db.from('habit_completions').delete().eq('habit_id',h.id).eq('user_id',user.id).eq('completed_on',today());const deduction=ids.reduce((s,h)=>s+h.xp_reward,0);profile.lifetime_xp=Math.max(0,profile.lifetime_xp-deduction);await db.from('profiles').update({lifetime_xp:profile.lifetime_xp}).eq('id',user.id);await load();toast('Today’s quests reset')};
+$('authForm').onsubmit=auth;
+$('authSwitch').onclick=()=>mode(!loginMode);
+$('resendConfirm').onclick=resendConfirmation;
+document.querySelectorAll('.password-eye').forEach(btn=>btn.addEventListener('click',()=>{const input=$(btn.dataset.target);const visible=input.type==='text';input.type=visible?'password':'text';btn.textContent=visible?'◉':'◎';btn.setAttribute('aria-label',visible?'Show password':'Hide password')}));
+$('addQuestBtn').onclick=()=>{$('questDialog').showModal();$('questName').focus()};$('emptyAddBtn').onclick=()=>{$('questDialog').showModal();$('questName').focus()};$('questForm').onsubmit=add;$('userMenu').onclick=async()=>{await db.auth.signOut();location.reload()};
+$('resetDayBtn').onclick=async()=>{const ids=habits.filter(h=>complete(h.id));for(const h of ids)await db.from('habit_completions').delete().eq('habit_id',h.id).eq('user_id',user.id).eq('completed_on',today());const deduction=ids.reduce((s,h)=>s+h.xp_reward,0);profile.lifetime_xp=Math.max(0,profile.lifetime_xp-deduction);await db.from('profiles').update({lifetime_xp:profile.lifetime_xp}).eq('id',user.id);await load();toast('Today’s quests reset')};
 $('questDialog').onclick=e=>{if(e.target===$('questDialog'))$('questDialog').close()};
 (async()=>{mode(false);const r=await db.auth.getSession();if(r.data.session){user=r.data.session.user;try{await load()}catch(e){message(e.message,true)}}})();
