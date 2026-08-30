@@ -20,11 +20,14 @@
       <form id="authForm">
         <div id="displayNameField"><label for="displayName">Adventurer name</label><input id="displayName" maxlength="40" autocomplete="name" placeholder="Your name" /></div>
         <label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com" required />
-        <label for="password">Password</label><input id="password" type="password" minlength="6" autocomplete="new-password" placeholder="At least 6 characters" required />
+        <label for="password">Password</label>
+        <div class="password-wrap"><input id="password" type="password" minlength="6" autocomplete="new-password" placeholder="At least 6 characters" required /><button type="button" class="password-eye" data-target="password" aria-label="Show password">◉</button></div>
+        <div id="confirmPasswordField"><label for="confirmPassword">Confirm password</label><div class="password-wrap"><input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" placeholder="Enter your password again" /><button type="button" class="password-eye" data-target="confirmPassword" aria-label="Show password">◉</button></div></div>
         <p id="authMessage" class="auth-message" role="status"></p>
         <button class="primary-btn auth-submit" id="authSubmit" type="submit">Create Account</button>
       </form>
-      <button class="auth-switch" id="authSwitch" type="button">Already have an account? Log in</button>
+      <button class="auth-switch" id="authSwitch" type="button">I already have an account</button>
+      <button class="auth-resend hidden" id="resendConfirm" type="button">Resend confirmation email</button>
     </div>
   </div>
 
