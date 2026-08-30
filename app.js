@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://qkvpblwybivrlqvztzng.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VbHwBKntirFkozG1wKcHAA_3-cBL71o';
-const PRODUCTION_URL = 'https://habittracker-rho-one.vercel.app';
+const PRODUCTION_URL = window.location.origin;
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let user = null, profile = null, habits = [], completions = new Set(), loginMode = false;
 const $ = id => document.getElementById(id);
@@ -44,7 +44,7 @@ async function auth(e){
     user=r.data.user; await load();
   }catch(x){
     message(x.message || 'Authentication failed.',true);
-    if(loginMode && /confirm|verified|verification/i.test(x.message||'')) show('resendConfirm', true);
+    if(/confirm|verified|verification|not found|invalid/i.test(x.message||'')) show('resendConfirm', true);
   }finally{$('authSubmit').disabled=false}
 }
 async function resendConfirmation(){
@@ -54,7 +54,7 @@ async function resendConfirmation(){
   try{
     const r=await db.auth.resend({type:'signup',email,options:{emailRedirectTo:PRODUCTION_URL}});
     if(r.error) throw r.error;
-    message('Confirmation email sent. Check your inbox and spam folder.');
+    message('New confirmation email sent. Check your inbox and spam folder.');
   }catch(x){message(x.message||'Could not resend the confirmation email.',true)}
   finally{$('resendConfirm').disabled=false}
 }
